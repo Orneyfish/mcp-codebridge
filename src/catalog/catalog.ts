@@ -4,7 +4,7 @@ import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { toIdent } from "../config.ts";
 import { classify } from "../gate/classify.ts";
 import { openDb } from "./db.ts";
-import { toolDecl } from "./tsdecl.ts";
+import { shapeOf, toolDecl } from "./tsdecl.ts";
 
 type Access = "read" | "write";
 type ToolLike = Pick<Tool, "name" | "description" | "inputSchema" | "outputSchema" | "annotations">;
@@ -54,7 +54,7 @@ export class Catalog {
         changed.push(t.name);
         const vals = [ident, ns, summaryOf(t.description), t.description ?? "", toolDecl(ident, t), toolDecl(ident, t, "any"), access, src, hash];
         let id = row?.id;
-        if (row) this.db.prepare("UPDATE tools SET ident=?, ns=?, summary=?, description=?, decl=?, check_decl=?, access=?, access_src=?, hash=? WHERE id=?").run(...vals, id);
+        if (row) this.db.prepare("UPDATE tools SET ident=?, ns=?, summary=?, description=?, decl=?, check_decl=?, access=?, access_src=?, hash=?, learned=NULL WHERE id=?").run(...vals, id);
         else id = this.db.prepare("INSERT INTO tools(ident, ns, summary, description, decl, check_decl, access, access_src, hash, server, name) VALUES (?,?,?,?,?,?,?,?,?,?,?)").run(...vals, server, t.name).lastInsertRowid;
         this.db.prepare("DELETE FROM tools_fts WHERE rowid = ?").run(id);
         this.db.prepare("INSERT INTO tools_fts(rowid, ident, summary, description) VALUES (?,?,?,?)").run(id, `${ns}.${ident}`, summaryOf(t.description), t.description ?? "");
@@ -144,7 +144,8 @@ export class Catalog {
         const r = this.db.prepare("SELECT description FROM recipes WHERE name = ? AND status = 'ok'").get(id);
         if (r) decl = `/** ${r.description} */\n${id}(args: any): Promise<unknown>;`;
       } else {
-        decl = this.db.prepare("SELECT decl FROM tools WHERE ns = ? AND ident = ?").get(ns, id)?.decl as string | undefined;
+        const r = this.db.prepare("SELECT decl, learned FROM tools WHERE ns = ? AND ident = ?").get(ns, id);
+        decl = r && (r.learned ? (r.decl as string).replace(/Promise<unknown>;$/, `Promise<${r.learned}>;`) : (r.decl as string));
       }
       if (!decl) { missing.push(n); continue; }
       groups.set(ns, [...(groups.get(ns) ?? []), decl]);
@@ -173,6 +174,14 @@ export class Catalog {
       byNs.set(r.ns as string, [...(byNs.get(r.ns as string) ?? []), r.check_decl as string]);
     }
     return [...byNs].map(([ns, ds]) => `declare const ${ns}: {\n${ds.join("\n")}\n};`).join("\n");
+  }
+
+  // Record the shape of an observed result; only for tools without an outputSchema (decl returns unknown).
+  // A shorter (less informative) shape never replaces a longer one.
+  learnShape(server: string, tool: string, value: unknown): void {
+    const shape = shapeOf(value);
+    this.db.prepare(`UPDATE tools SET learned = ? WHERE server = ? AND name = ? AND decl LIKE '%Promise<unknown>;'
+      AND (learned IS NULL OR length(learned) <= ?)`).run(shape, server, tool, shape.length);
   }
 
   logCall(c: { server: string; tool: string; ms: number; bytes: number; runId: string }): void {

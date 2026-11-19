@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { tmpHome } from "./helpers.ts";
 import { paths } from "../src/paths.ts";
 import { Catalog } from "../src/catalog/catalog.ts";
@@ -57,6 +58,19 @@ test("model verdicts: unclassified, setModelAccess, kept while hash unchanged", 
   assert.equal(c.resolve("fx", "slow")!.access, "write");
   c.syncServer("fx", "fx", TOOLS, { slow: { access: "read" } });
   assert.ok(!c.unclassified().some((t) => t.name === "slow"));
+});
+
+test("learned result shapes show in describe, not in check declarations; reset on change", () => {
+  const c = fresh();
+  c.learnShape("fx", "get_item", { id: "7", name: "item 7", auth: false });
+  assert.match(c.describe(["fx.get_item"]), /get_item\(args: \{ id: string \}\): Promise<\{ id: string; name: string; auth: boolean \}>;/);
+  assert.match(c.checkDeclarations(), /get_item\(args: \{ id: string \}\): Promise<any>;/);
+  c.learnShape("fx", "get_item", "short");
+  assert.match(c.describe(["fx.get_item"]), /Promise<\{ id: string/, "a less informative shape does not replace a richer one");
+  c.learnShape("fx", "list_items", { other: 1 });
+  assert.match(c.describe(["fx.list_items"]), /Promise<\{ items: \{ id: string; blob: string \}\[\] \}>/, "outputSchema wins");
+  c.syncServer("fx", "fx", TOOLS.map((t: any) => t.name === "get_item" ? { ...t, description: "Changed." } : t));
+  assert.match(c.describe(["fx.get_item"]), /Promise<unknown>;/);
 });
 
 test("tool ident collision keeps first, reports second", () => {
@@ -117,4 +131,19 @@ test("catalog concurrent writers", { timeout: 30_000 }, async () => {
   assert.deepEqual(codes, [0, 0, 0]);
   const n = execFileSync(process.execPath, ["-e", `const {DatabaseSync}=require("node:sqlite");console.log(new DatabaseSync(${JSON.stringify(paths().catalogDb)}).prepare("select count(*) n from calls").get().n)`]).toString().trim();
   assert.equal(n, "1500");
+});
+
+test("openDb adds the learned column to an existing catalog", async () => {
+  tmpHome();
+  const { DatabaseSync } = await import("node:sqlite");
+  const { mkdirSync } = await import("node:fs");
+  mkdirSync(paths().dataDir, { recursive: true });
+  const old = new DatabaseSync(join(paths().dataDir, "old.db"));
+  old.exec("CREATE TABLE tools(id INTEGER PRIMARY KEY, server TEXT NOT NULL, name TEXT NOT NULL, ident TEXT NOT NULL, ns TEXT NOT NULL, summary TEXT, description TEXT, decl TEXT, check_decl TEXT, access TEXT, access_src TEXT, hash TEXT, usage REAL DEFAULT 0, UNIQUE(server, name))");
+  old.close();
+  const { openDb } = await import("../src/catalog/db.ts");
+  const c = new Catalog(openDb(join(paths().dataDir, "old.db")));
+  c.syncServer("fx", "fx", TOOLS);
+  c.learnShape("fx", "get_item", { id: "1" });
+  assert.match(c.describe(["fx.get_item"]), /Promise<\{ id: string \}>/);
 });

@@ -40,6 +40,13 @@ test("read runs freely, trimmed", async () => {
   await upstreams.close();
 });
 
+test("read calls teach the catalog their result shape", async () => {
+  const { runs, upstreams, catalog } = setup();
+  await runs.execute('return (await fx.get_item({id:"7"})).name');
+  assert.match(catalog.describe(["fx.get_item"]), /Promise<\{ id: string; name: string; tags: unknown\[\]; auth: boolean \}>/);
+  await upstreams.close();
+});
+
 test("write pauses; yes executes once; audited", async () => {
   const { runs, upstreams, count, audit } = setup();
   const p: any = await runs.execute('await fx.delete_item({id:"1"}); return "done"');

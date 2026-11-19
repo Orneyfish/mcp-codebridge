@@ -40,3 +40,42 @@ export function toolDecl(ident: string, tool: { name: string; description?: stri
   const ret = tool.outputSchema ? schemaToTs(tool.outputSchema) : fallbackReturn;
   return `/** ${doc.join("\n")} */\n${ident}(args: ${schemaToTs(tool.inputSchema)}): Promise<${ret}>;`;
 }
+
+const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+const ID_LIKE = /\d{3,}|^[A-Za-z]+_[A-Za-z0-9]{8,}$/;
+const isPlain = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+
+// TypeScript-ish type of an observed value: keys and value types only, never values.
+// Data-like keys (ids, spaces, very wide objects) collapse to Record<string, unknown>.
+export function shapeOf(v: unknown, maxChars = 800): string {
+  for (let depth = 4; depth >= 1; depth--) {
+    const s = shapeAt(v, 0, depth);
+    if (s.length <= maxChars) return s;
+  }
+  return Array.isArray(v) ? "unknown[]" : isPlain(v) ? "object" : typeof v;
+}
+
+function shapeAt(v: unknown, depth: number, maxDepth: number): string {
+  if (v === null) return "null";
+  if (Array.isArray(v)) {
+    if (!v.length) return "unknown[]";
+    const items = v.slice(0, 5);
+    if (items.every(isPlain)) return `${objectShape(items, depth, maxDepth)}[]`;
+    return `${wrap([...new Set(items.map((i) => shapeAt(i, depth, maxDepth)))].join(" | "))}[]`;
+  }
+  if (isPlain(v)) return objectShape([v], depth, maxDepth);
+  return ["string", "number", "boolean"].includes(typeof v) ? typeof v : "unknown";
+}
+
+function objectShape(objs: Record<string, unknown>[], depth: number, maxDepth: number): string {
+  if (depth >= maxDepth) return "object";
+  const keys = [...new Set(objs.flatMap((o) => Object.keys(o)))];
+  if (!keys.length) return "{}";
+  if (keys.length > 40 || keys.some((k) => !IDENT.test(k) || ID_LIKE.test(k))) return "Record<string, unknown>";
+  const fields = keys.map((k) => {
+    const holder = objs.find((o) => k in o)!;
+    const opt = objs.every((o) => k in o) ? "" : "?";
+    return `${k}${opt}: ${shapeAt(holder[k], depth + 1, maxDepth)}`;
+  });
+  return `{ ${fields.join("; ")} }`;
+}

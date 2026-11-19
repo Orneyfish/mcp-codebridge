@@ -81,7 +81,9 @@ export class Runs {
       bytes = JSON.stringify(r).length;
       const v = toScriptValue(r, this.d.stash);
       this.d.catalog.recordKeySizes(t.server, t.name, keySizes(v));
-      return trim(v, this.d.catalog.dropKeys(t.server, t.name), this.d.stash);
+      const out = trim(v, this.d.catalog.dropKeys(t.server, t.name), this.d.stash);
+      this.d.catalog.learnShape(t.server, t.name, out);
+      return out;
     } finally {
       this.d.catalog.logCall({ server: t.server, tool: t.name, ms: Date.now() - t0, bytes, runId: run.id });
     }

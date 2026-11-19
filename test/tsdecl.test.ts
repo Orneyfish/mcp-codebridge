@@ -21,3 +21,19 @@ test("toolDecl", () => {
   assert.match(o, /list\(args: \{\}\): Promise<\{ n: number \}>;$/);
   assert.match(toolDecl("x", { name: "x", inputSchema: { type: "object" } }, "any"), /Promise<any>/);
 });
+
+import { shapeOf } from "../src/catalog/tsdecl.ts";
+
+test("shapeOf: keys and types only, never values", () => {
+  assert.equal(shapeOf({ result: { projects: [{ id: "prj_secret", name: "b" }], pagination: { count: 1 } } }),
+    "{ result: { projects: { id: string; name: string }[]; pagination: { count: number } } }");
+  assert.equal(shapeOf([{ a: 1 }, { b: "x" }]), "{ a?: number; b?: string }[]");
+  assert.equal(shapeOf([]), "unknown[]");
+  assert.equal(shapeOf("text"), "string");
+  assert.equal(shapeOf(null), "null");
+  assert.equal(shapeOf({ "prj_1": { x: 1 }, "my key": 2 }), "Record<string, unknown>", "data-like keys are not leaked");
+  assert.equal(shapeOf({ a: { b: { c: { d: { e: { f: 1 } } } } } }), "{ a: { b: { c: { d: object } } } }");
+  const wide = Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`field_${i}`, { nested: { deeper: "x".repeat(5) } }]));
+  assert.ok(shapeOf(wide).length <= 800, String(shapeOf(wide).length));
+  assert.ok(!shapeOf({ result: { projects: [{ id: "prj_secret" }] } }).includes("prj_secret"));
+});

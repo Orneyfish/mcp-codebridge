@@ -21,5 +21,7 @@ export function openDb(file = paths().catalogDb): DatabaseSync {
     CREATE TABLE IF NOT EXISTS rules(id INTEGER PRIMARY KEY, server TEXT, tool TEXT, key TEXT, status TEXT, UNIQUE(server, tool, key));
     CREATE TABLE IF NOT EXISTS meta(k TEXT PRIMARY KEY, v TEXT);
   `);
+  // Catalogs created before learned result shapes existed.
+  if (!db.prepare("SELECT 1 FROM pragma_table_info('tools') WHERE name = 'learned'").get()) db.exec("ALTER TABLE tools ADD COLUMN learned TEXT");
   return db;
 }
