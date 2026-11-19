@@ -27,7 +27,7 @@ test("toScriptValue", () => {
 
 test("trim", () => {
   const s = st();
-  assert.deepEqual(trim({ a: null, b: "", c: [], d: {}, e: 1 }, [], s), { e: 1 });
+  assert.deepEqual(trim({ a: null, b: "", c: [], d: {}, e: 1 }, [], s), { c: [], e: 1 }); // [] kept: scripts iterate it
   assert.deepEqual(trim({ x: { y: null, z: 2 } }, [], s), { x: { z: 2 } });
   const t = trim({ img: B64 }, [], s) as any;
   assert.equal(t.img.bytes, 3000);

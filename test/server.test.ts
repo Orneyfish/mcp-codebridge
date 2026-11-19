@@ -59,7 +59,10 @@ test("instructions ≤ 3500 and start with header", () => {
 
 test("search → describe → execute", async () => {
   const { call } = await connect();
-  assert.match((await call("search", { query: "get item" })).text, /^fx\.get_item — /);
+  const found = (await call("search", { query: "get item" })).text;
+  assert.match(found, /^fx\.get_item — /);
+  assert.match(found, /\n\n\/\/ fx\n[\s\S]*get_item\(args: \{ id: string \}\)/, "top matches come with signatures");
+  assert.equal(found.match(/\): Promise</g)!.length, 3, "signatures only for the top 3");
   assert.match((await call("describe", { names: ["fx.get_item"] })).text, /get_item\(args: \{ id: string \}\)/);
   const r = JSON.parse((await call("execute", { code: 'return (await fx.get_item({id:"7"})).name' })).text);
   assert.deepEqual(r, { status: "completed", result: "item 7", logs: [] });

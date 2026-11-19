@@ -35,7 +35,8 @@ test("read runs freely, trimmed", async () => {
   const o: any = await runs.execute('return await fx.get_item({id:"7"})');
   assert.equal(o.status, "completed", JSON.stringify(o));
   assert.equal(o.result.name, "item 7");
-  assert.ok(!("empty" in o.result) && !("tags" in o.result));
+  assert.ok(!("empty" in o.result));
+  assert.deepEqual(o.result.tags, []);
   await upstreams.close();
 });
 

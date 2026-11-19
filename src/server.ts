@@ -27,9 +27,14 @@ export function createServer({ runs, catalog, saveRecipe }: Deps): McpServer {
 
   server.registerTool("search", {
     _meta,
-    description: "Find upstream MCP tools and saved recipes by keywords. Returns one line each: ns.tool — summary [read|write|recipe].",
+    description: "Find upstream MCP tools and saved recipes by keywords: one line each (ns.tool — summary [read|write|recipe]), plus TypeScript signatures of the top 3.",
     inputSchema: { query: z.string(), limit: z.number().int().min(1).max(50).optional() },
-  }, ({ query, limit }) => guard(() => catalog.search(query, limit).join("\n") || "no matches")());
+  }, ({ query, limit }) => guard(() => {
+    const lines = catalog.search(query, limit);
+    if (!lines.length) return "no matches";
+    // Signatures of the top 3 save a describe round trip in the common case.
+    return `${lines.join("\n")}\n\n${catalog.describe(lines.slice(0, 3).map((l) => l.split(" — ")[0]))}`;
+  })());
 
   server.registerTool("describe", {
     _meta,

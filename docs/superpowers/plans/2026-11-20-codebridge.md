@@ -517,3 +517,9 @@ This replaces the name heuristic in design §5.5. The new classification order i
 - The catalog stores `access_src` (`override|annotation|model|default`). A tool without a verdict is `write` (`default`). A model verdict is kept while the tool's hash is unchanged.
 - `src/gate/model-classify.ts` provides `classifyWithModel(tools, ask = askHaiku)`. It sends batches of ≤ 40 tools (`id`, name, description, TS signature) to `claude -p --model haiku --strict-mcp-config --tools "" --no-session-persistence --output-format json`, which was verified working in this session (~3 s, `claude-haiku-5-5`). The reply is a JSON object of `id → "read"|"write"`. Anything missing or invalid, and any failure, leaves the tool at `write`. The prompt says "unsure → write". Only tool metadata is sent, never arguments, results or secrets.
 - `refresh` (Task 10) classifies the catalog's `unclassified()` tools after syncing and reports failures in `errors`.
+
+## Changes approved by the user after benchmark run 2 (2026-11-20)
+
+- `search` appends the TypeScript signatures of its top 3 matches, which saves a `describe` round trip in the common case. `describe` stays available for other tools.
+- Trimming keeps empty arrays (design §5.6 said to drop all empty fields). With them dropped, a search that found nothing turned `items: []` into `undefined`, and scripts that called `.map` on it crashed.
+- Earlier fix found by the benchmark: the five tools carry `_meta["anthropic/alwaysLoad"] = true`, so Claude Code doesn't defer them behind tool search (design G2).

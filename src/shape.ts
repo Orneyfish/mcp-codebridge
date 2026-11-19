@@ -4,7 +4,8 @@ import type { Stash } from "./stash.ts";
 const B64 = /^[A-Za-z0-9+/=\r\n_-]+$/;
 const MAX_DEPTH = 200; // deeper values pass through untouched (no stack blow-up)
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
-const isEmpty = (v: unknown) => v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length) || (isObj(v) && !Object.keys(v).length);
+// Empty arrays are kept: scripts call .map/.length on them, and [] costs 2 chars.
+const isEmpty = (v: unknown) => v === null || v === undefined || v === "" || (isObj(v) && !Object.keys(v).length);
 
 export function toScriptValue(r: CallToolResult, stash: Stash): unknown {
   const parts = (r.content ?? []).map((c: any) => {
