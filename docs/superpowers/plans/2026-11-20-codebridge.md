@@ -505,3 +505,15 @@ How a run works: write `<tmpdir>/run.ts` containing `PRELUDE` + `const __ns = <J
 
 - Coverage: §5.2 → Tasks 8–9. §5.3 → 3, 4, 4b, 11, 12. §5.4 → 2. §5.5 → 5 (classify), 7, 8 (elicitation). §5.6 → 6, 10 (rules). §5.7 → 10, with shared state in 5's concurrency test. §5.8 → 11, 12. §5.9 → 13. G2 footprint → Task 8 test.
 - Not in v1, per design: upstream resources/prompts, a type-check pass on `execute`, and property-access tracking (simplified as the design allows).
+
+---
+
+## Change requested by the user during execution (2026-11-20)
+
+> "Don't guess the tool usage, may be a small call to the haiku models or smaller models available should let select instead of wrong guess."
+
+This replaces the name heuristic in design §5.5. The new classification order is: config override, then MCP annotations, then **Haiku's verdict**, then **write**.
+- `classify()` drops the name-prefix rule and returns `undefined` when neither an override nor an annotation decides.
+- The catalog stores `access_src` (`override|annotation|model|default`). A tool without a verdict is `write` (`default`). A model verdict is kept while the tool's hash is unchanged.
+- `src/gate/model-classify.ts` provides `classifyWithModel(tools, ask = askHaiku)`. It sends batches of ≤ 40 tools (`id`, name, description, TS signature) to `claude -p --model haiku --strict-mcp-config --tools "" --no-session-persistence --output-format json`, which was verified working in this session (~3 s, `claude-haiku-5-5`). The reply is a JSON object of `id → "read"|"write"`. Anything missing or invalid, and any failure, leaves the tool at `write`. The prompt says "unsure → write". Only tool metadata is sent, never arguments, results or secrets.
+- `refresh` (Task 10) classifies the catalog's `unclassified()` tools after syncing and reports failures in `errors`.
