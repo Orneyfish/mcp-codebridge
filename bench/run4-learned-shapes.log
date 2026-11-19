@@ -1,0 +1,52 @@
+up: codegraph, vercel, cloudflare, mempalace
+stale: -
+unsupported: claude.ai Gmail, claude.ai Google Drive, claude.ai Google Calendar, claude.ai Google Docs, claude.ai Google Sheets, claude.ai Google Slides, claude.ai Claude Docs
+failed: -
+changed tools: 0, model-classified: 0, new rule proposals: 0
+broken recipes: -
+primary cg-power-plans direct: ok=true tokens=43605 tools=2 10967ms
+primary cg-power-plans bridge: ok=true tokens=34965 tools=2 9113ms
+primary cg-callers direct: ok=true tokens=33514 tools=2 8138ms
+primary cg-callers bridge: ok=true tokens=38700 tools=3 12109ms
+primary cg-brightness direct: ok=true tokens=33059 tools=2 8649ms
+primary cg-brightness bridge: ok=true tokens=24786 tools=1 7494ms
+primary mp-kg-stats direct: ok=true tokens=26510 tools=2 7733ms
+primary mp-kg-stats bridge: ok=true tokens=28191 tools=2 7974ms
+primary vc-model-limits direct: ok=true tokens=47573 tools=3 11349ms
+primary vc-model-limits bridge: ok=true tokens=28529 tools=2 9978ms
+primary vc-haiku-count direct: ok=true tokens=43158 tools=2 10207ms
+primary vc-haiku-count bridge: ok=true tokens=27890 tools=2 10135ms
+primary vc-docs-duration direct: ok=true tokens=42141 tools=2 8807ms
+primary vc-docs-duration bridge: ok=true tokens=19078 tools=1 8457ms
+primary vc-deploy-summary direct: ok=true tokens=61343 tools=3 12646ms
+primary vc-deploy-summary bridge: ok=true tokens=82501 tools=6 27276ms
+primary vc-latest-prod direct: ok=true tokens=63063 tools=4 12861ms
+primary vc-latest-prod bridge: ok=true tokens=31990 tools=2 13878ms
+primary vc-why-failed direct: ok=true tokens=65363 tools=3 12400ms
+primary vc-why-failed bridge: ok=true tokens=45075 tools=3 15730ms
+
+Primary (no recipes)
+| task | mode | ok | tokens | tool calls | ms |
+|---|---|---|---|---|---|
+| cg-power-plans | direct | yes | 43605 | 2 | 10967 |
+| cg-power-plans | bridge | yes | 34965 | 2 | 9113 |
+| cg-callers | direct | yes | 33514 | 2 | 8138 |
+| cg-callers | bridge | yes | 38700 | 3 | 12109 |
+| cg-brightness | direct | yes | 33059 | 2 | 8649 |
+| cg-brightness | bridge | yes | 24786 | 1 | 7494 |
+| mp-kg-stats | direct | yes | 26510 | 2 | 7733 |
+| mp-kg-stats | bridge | yes | 28191 | 2 | 7974 |
+| vc-model-limits | direct | yes | 47573 | 3 | 11349 |
+| vc-model-limits | bridge | yes | 28529 | 2 | 9978 |
+| vc-haiku-count | direct | yes | 43158 | 2 | 10207 |
+| vc-haiku-count | bridge | yes | 27890 | 2 | 10135 |
+| vc-docs-duration | direct | yes | 42141 | 2 | 8807 |
+| vc-docs-duration | bridge | yes | 19078 | 1 | 8457 |
+| vc-deploy-summary | direct | yes | 61343 | 3 | 12646 |
+| vc-deploy-summary | bridge | yes | 82501 | 6 | 27276 |
+| vc-latest-prod | direct | yes | 63063 | 4 | 12861 |
+| vc-latest-prod | bridge | yes | 31990 | 2 | 13878 |
+| vc-why-failed | direct | yes | 65363 | 3 | 12400 |
+| vc-why-failed | bridge | yes | 45075 | 3 | 15730 |
+direct: 459329 tokens, 10 ok, 25 calls | bridge: 361705 tokens, 10 ok, 24 calls
+saving: 21.3% → FAIL (bar: ≥30% fewer tokens, equal success)
