@@ -81,6 +81,42 @@
         "functions"
       ],
       "prompt": "According to Vercel's documentation, which vercel.json property do you use to override the maximum duration of matched functions? Name the property."
+    },
+    {
+      "id": "vc-deploy-summary",
+      "servers": [
+        "vercel"
+      ],
+      "expect": [
+        "anurag-sarkar",
+        "4",
+        "1",
+        "Rebuild as"
+      ],
+      "prompt": "In my Vercel team orneyfish-s-team, list each project with its number of deployments and how many of them ended in ERROR. For each failed deployment, give the first line of its commit message."
+    },
+    {
+      "id": "vc-latest-prod",
+      "servers": [
+        "vercel"
+      ],
+      "expect": [
+        "2902139",
+        "Add portfolio link",
+        "anurag-sarkar.vercel.app"
+      ],
+      "prompt": "In my Vercel team orneyfish-s-team, for each project give the short (7-char) commit SHA and commit message of its most recent production deployment, and the domains attached to the project."
+    },
+    {
+      "id": "vc-why-failed",
+      "servers": [
+        "vercel"
+      ],
+      "expect": [
+        "vulnerab",
+        "Next.js"
+      ],
+      "prompt": "In my Vercel team orneyfish-s-team, one deployment ended in ERROR. Read its build logs and tell me in one sentence why it failed."
     }
   ],
   "recipeTraining": [
