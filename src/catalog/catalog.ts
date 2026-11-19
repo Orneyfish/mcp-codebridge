@@ -142,6 +142,10 @@ export class Catalog {
     return this.db.prepare("SELECT ns, ident, server, name, access FROM tools ORDER BY ns, ident").all() as any;
   }
 
+  namespaces(): Set<string> {
+    return new Set(this.db.prepare("SELECT DISTINCT ns FROM tools").all().map((r) => r.ns as string));
+  }
+
   checkDeclarations(): string {
     const byNs = new Map<string, string[]>();
     for (const r of this.db.prepare("SELECT ns, check_decl FROM tools ORDER BY ns, ident").all()) {

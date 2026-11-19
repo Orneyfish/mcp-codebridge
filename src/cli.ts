@@ -2,6 +2,7 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Catalog } from "./catalog/catalog.ts";
 import { loadServers, type ServerEntry } from "./config.ts";
+import { recipePrelude, saveRecipe } from "./recipes.ts";
 import { Runs } from "./runs.ts";
 import { DenoExecutor } from "./sandbox/deno.ts";
 import { createServer } from "./server.ts";
@@ -18,8 +19,8 @@ async function serve() {
   const catalog = new Catalog();
   const upstreams = makeUpstreams(loadServers());
   const stash = new Stash();
-  const runs = new Runs({ executor: new DenoExecutor(), catalog, upstreams, stash });
-  const server = createServer({ runs, catalog, saveRecipe: () => { throw new Error("recipes not available yet"); } });
+  const runs = new Runs({ executor: new DenoExecutor(), catalog, upstreams, stash, recipePrelude: (code) => recipePrelude(code, catalog) });
+  const server = createServer({ runs, catalog, saveRecipe: (n, c, d) => saveRecipe(n, c, d, catalog) });
   const shutdown = async () => { runs.close(); await upstreams.close(); process.exit(0); };
   process.stdin.on("close", shutdown);
   process.on("SIGTERM", shutdown);
