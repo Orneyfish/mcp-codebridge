@@ -26,7 +26,7 @@ export async function refresh(d: { servers: Record<string, ServerEntry>; catalog
       ? `namespace "${ns}" is used by ${byNs.get(ns)!.map((n) => `"${n}"`).join(" and ")}; set "alias" on one of them in servers.json`
       : catalog.checkNamespace(name, ns);
     if (clash) { r.errors.push(clash); catalog.markServer(name, "failed", clash); r.failed.push(name); continue; }
-    if (known.get(name)?.status === "unsupported") { r.unsupported.push(name); continue; }
+    if (known.get(name)?.status === "unsupported") { catalog.syncServer(name, ns, []); r.unsupported.push(name); continue; }
     try {
       const res = catalog.syncServer(name, ns, await d.upstreams.listTools(name), e.tools);
       r.changed.push(...res.changed.map((t) => `${name}.${t}`));

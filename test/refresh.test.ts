@@ -77,3 +77,13 @@ test("rule proposals, instructions ranking, retention", async () => {
   assert.equal(d.catalog.db.prepare("SELECT count(*) n FROM calls WHERE run_id = 'old'").get()!.n, 0);
   assert.ok(JSON.parse(d.catalog.get("last_report")!).up);
 });
+
+test("unsupported servers keep their status but expose no tools", async () => {
+  const d = setup({ fx });
+  await refresh({ ...d, ask });
+  d.catalog.markServer("fx", "unsupported", "no DCR");
+  const r = await refresh({ ...d, ask });
+  assert.deepEqual(r.unsupported, ["fx"]);
+  assert.equal(d.catalog.resolve("fx", "get_item"), undefined);
+  assert.equal(d.catalog.servers().find((s) => s.name === "fx")!.status, "unsupported");
+});
