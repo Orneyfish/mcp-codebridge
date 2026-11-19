@@ -1,0 +1,167 @@
+[
+ {
+  "name": "get_item",
+  "description": "Get one item by id. Returns its name.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "string",
+     "description": "Item id"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "annotations": {
+   "readOnlyHint": true
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ },
+ {
+  "name": "list_items",
+  "description": "List all items.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {},
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "outputSchema": {
+   "type": "object",
+   "properties": {
+    "items": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "string"
+       },
+       "blob": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "id",
+       "blob"
+      ],
+      "additionalProperties": false
+     }
+    }
+   },
+   "required": [
+    "items"
+   ],
+   "$schema": "http://json-schema.org/draft-07/schema#",
+   "additionalProperties": false
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ },
+ {
+  "name": "delete_item",
+  "description": "Delete an item.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "id": {
+     "type": "string"
+    }
+   },
+   "required": [
+    "id"
+   ],
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "annotations": {
+   "destructiveHint": true
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ },
+ {
+  "name": "make_thing",
+  "description": "Make a thing.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {},
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ },
+ {
+  "name": "image_tool",
+  "description": "Return an image.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {},
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ },
+ {
+  "name": "fail_tool",
+  "description": "Always fails.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {},
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ },
+ {
+  "name": "crash",
+  "description": "Exit the process.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {},
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ },
+ {
+  "name": "slow",
+  "description": "Sleep.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {
+    "ms": {
+     "type": "number"
+    }
+   },
+   "required": [
+    "ms"
+   ],
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ },
+ {
+  "name": "echo_env",
+  "description": "Echo FIXTURE_SECRET.",
+  "inputSchema": {
+   "type": "object",
+   "properties": {},
+   "$schema": "http://json-schema.org/draft-07/schema#"
+  },
+  "execution": {
+   "taskSupport": "forbidden"
+  }
+ }
+]
