@@ -1,0 +1,119 @@
+{
+  "primary": [
+    {
+      "id": "cg-power-plans",
+      "servers": [
+        "codegraph"
+      ],
+      "expect": [
+        "Quiet",
+        "power-saver",
+        "Balanced",
+        "Performance"
+      ],
+      "prompt": "In the Rust repo at /home/orneyfish/Projects/rog-control, which power plan does each performance profile map to? List each profile with its plan."
+    },
+    {
+      "id": "cg-callers",
+      "servers": [
+        "codegraph"
+      ],
+      "expect": [
+        "apply_all",
+        "save_to"
+      ],
+      "prompt": "In the Rust repo at /home/orneyfish/Projects/rog-control: which function calls apply_optimized, and which function calls keep_unusable? Answer with the two caller function names."
+    },
+    {
+      "id": "cg-brightness",
+      "servers": [
+        "codegraph"
+      ],
+      "expect": [
+        "hw.rs",
+        "off",
+        "low",
+        "med",
+        "high"
+      ],
+      "prompt": "In the Rust repo at /home/orneyfish/Projects/rog-control, which source file defines BRIGHTNESS_LEVELS and what are its values?"
+    },
+    {
+      "id": "mp-kg-stats",
+      "servers": [
+        "mempalace"
+      ],
+      "expect": [
+        "entities",
+        "triples"
+      ],
+      "prompt": "Using mempalace, report how many entities and how many triples the knowledge graph currently holds, as 'entities: N, triples: M'."
+    },
+    {
+      "id": "vc-model-limits",
+      "servers": [
+        "vercel"
+      ],
+      "expect": [
+        "200000",
+        "64000",
+        "1000000"
+      ],
+      "prompt": "Using Vercel AI Gateway's model catalog, give the context window and max output tokens for anthropic/claude-haiku-4.5 and anthropic/claude-sonnet-4.5. Write numbers as plain integers without separators, e.g. 'model: context=N, max_output=M'."
+    },
+    {
+      "id": "vc-haiku-count",
+      "servers": [
+        "vercel"
+      ],
+      "expect": [
+        "4",
+        "claude-haiku-5.5"
+      ],
+      "prompt": "How many Claude Haiku models (batch variants included) does Vercel AI Gateway's catalog list, and which one has the largest context window? Give the count and the model id."
+    },
+    {
+      "id": "vc-docs-duration",
+      "servers": [
+        "vercel"
+      ],
+      "expect": [
+        "functions"
+      ],
+      "prompt": "According to Vercel's documentation, which vercel.json property do you use to override the maximum duration of matched functions? Name the property."
+    }
+  ],
+  "recipeTraining": [
+    {
+      "id": "cg-tray-icon",
+      "servers": [
+        "codegraph"
+      ],
+      "expect": [
+        "rog-control-symbolic"
+      ],
+      "prompt": "In the Rust repo at /home/orneyfish/Projects/rog-control, what is the value of TRAY_ICON_NAME?"
+    },
+    {
+      "id": "cg-gpu-modes",
+      "servers": [
+        "codegraph"
+      ],
+      "expect": [
+        "GPU_MODES",
+        "panels.rs"
+      ],
+      "prompt": "In the Rust repo at /home/orneyfish/Projects/rog-control, which constant lists the GPU modes, and which source file iterates over it?"
+    },
+    {
+      "id": "vc-sonnet5-context",
+      "servers": [
+        "vercel"
+      ],
+      "expect": [
+        "1000000"
+      ],
+      "prompt": "Using Vercel AI Gateway's model catalog, what is the context window of anthropic/claude-sonnet-5? Write it as a plain integer."
+    }
+  ]
+}
