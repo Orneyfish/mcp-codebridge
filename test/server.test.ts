@@ -42,7 +42,10 @@ test("lists exactly five tools; footprint ≤ 4000 chars", async () => {
   const { client } = await connect();
   const { tools } = await client.listTools();
   assert.deepEqual(tools.map((t) => t.name).sort(), ["approve", "describe", "execute", "save_recipe", "search"]);
-  for (const t of tools) assert.ok((t.description ?? "").length <= 200, t.name);
+  for (const t of tools) {
+    assert.ok((t.description ?? "").length <= 200, t.name);
+    assert.equal(t._meta?.["anthropic/alwaysLoad"], true, `${t.name} must not be deferred behind tool search`);
+  }
   const total = JSON.stringify(tools).length + (client.getInstructions() ?? "").length;
   assert.ok(total <= 4000, `footprint ${total}`);
 });
