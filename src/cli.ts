@@ -9,7 +9,8 @@ import { DenoExecutor } from "./sandbox/deno.ts";
 import { createServer } from "./server.ts";
 import { Stash } from "./stash.ts";
 import { Upstreams } from "./upstream/manager.ts";
-import { FileOAuthProvider } from "./upstream/oauth.ts";
+import { FileOAuthProvider, login } from "./upstream/oauth.ts";
+import { importServers, status, verify } from "./commands.ts";
 
 export function makeUpstreams(servers: Record<string, ServerEntry>): Upstreams {
   const enabled = Object.fromEntries(Object.entries(servers).filter(([, e]) => !e.disabled));
@@ -54,11 +55,39 @@ function rulesCmd(sub = "list", id?: string) {
   console.log(`rule ${id} ${sub}ed`);
 }
 
+async function loginCmd(name?: string) {
+  const servers = loadServers();
+  if (!name || !servers[name]) throw new Error(`usage: codebridge login <server>; known: ${Object.keys(servers).join(", ")}`);
+  const r = await login(name, servers[name]);
+  if ("unsupported" in r) {
+    new Catalog().markServer(name, "unsupported", r.unsupported);
+    console.log(`${name}: unsupported (${r.unsupported}). Keep using it through its direct entry.`);
+  } else console.log(`${name}: signed in. Run codebridge refresh to load its tools.`);
+}
+
+async function verifyCmd(name?: string) {
+  const servers = loadServers();
+  if (!name || !servers[name]) throw new Error(`usage: codebridge verify <server>; known: ${Object.keys(servers).join(", ")}`);
+  const upstreams = makeUpstreams(servers);
+  try {
+    const r = await verify(name, { servers, catalog: new Catalog(), upstreams });
+    for (const l of r.lines) console.log(l);
+    console.log(r.ok ? `${name}: verified` : `${name}: NOT verified — keep the direct entry`);
+    if (!r.ok) process.exitCode = 1;
+  } finally {
+    await upstreams.close();
+  }
+}
+
 const [cmd, ...rest] = process.argv.slice(2);
 try {
   if (!cmd || cmd === "serve") await serve();
   else if (cmd === "refresh") await refreshCmd();
   else if (cmd === "rules") rulesCmd(rest[0], rest[1]);
+  else if (cmd === "import") { const r = importServers(); console.log(`added: ${r.added.join(", ") || "-"}\nskipped: ${r.skipped.join(", ") || "-"}`); }
+  else if (cmd === "login") await loginCmd(rest[0]);
+  else if (cmd === "verify") await verifyCmd(rest[0]);
+  else if (cmd === "status") console.log(status(new Catalog(), loadServers()));
   else throw new Error(`unknown command: ${cmd}\nusage: codebridge [serve | refresh | rules | import | login <server> | verify <server> | status]`);
 } catch (e) {
   console.error(e instanceof Error ? e.message : String(e));
