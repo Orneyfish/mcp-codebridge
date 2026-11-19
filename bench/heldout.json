@@ -1,0 +1,23 @@
+{
+  "primary": [
+    { "id": "h-cg-hwmon", "servers": ["codegraph"], "expect": ["resolve_hwmon_paths", "Hwmon"],
+      "prompt": "In the Rust repo at /home/orneyfish/Projects/rog-control, which function resolves the hwmon sysfs paths, and what type does it return?" },
+    { "id": "h-cg-gpu-modes", "servers": ["codegraph"], "expect": ["Eco", "Standard", "Ultimate", "Optimized"],
+      "prompt": "List the GPU modes that the Rust app at /home/orneyfish/Projects/rog-control offers." },
+    { "id": "h-cg-appid", "servers": ["codegraph"], "expect": ["com.orneyfish.RogControl", "hw.rs"],
+      "prompt": "What application ID does the Rust app at /home/orneyfish/Projects/rog-control use, and which source file defines it?" },
+    { "id": "h-vc-domains", "servers": ["vercel"], "expect": ["anurag-sarkar.vercel.app"],
+      "prompt": "Which domains are attached to the Vercel project anurag-sarkar in my team orneyfish-s-team, and are they verified?" },
+    { "id": "h-vc-repo", "servers": ["vercel"], "expect": ["first-website", "master"],
+      "prompt": "Which GitHub repository and branch is the latest production deployment of my Vercel project anurag-sarkar (team orneyfish-s-team) built from?" },
+    { "id": "h-vc-nextjs", "servers": ["vercel"], "expect": ["15.2.9", "READY"],
+      "prompt": "Among the deployments of my Vercel project anurag-sarkar (team orneyfish-s-team), find the one whose commit upgraded Next.js. Which version did it upgrade to, and what state did the deployment end in?" },
+    { "id": "h-vc-gpt-1m", "servers": ["vercel"], "expect": ["13"],
+      "prompt": "On Vercel AI Gateway, how many OpenAI language models whose id contains \"gpt-5\" have a context window strictly larger than 1,000,000 tokens? Give the count." },
+    { "id": "h-cf-whoami", "servers": ["cloudflare"], "expect": ["@gmail.com"],
+      "prompt": "Which email address is my Cloudflare connection authenticated as?" },
+    { "id": "h-mp-wings", "servers": ["mempalace"], "expect": ["missing"],
+      "prompt": "List the wings in my mempalace. If it reports a problem instead, quote the problem." }
+  ],
+  "recipeTraining": []
+}

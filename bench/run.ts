@@ -1,5 +1,6 @@
 // Token benchmark (design §5.9): each task runs via `claude -p` with the direct servers only, then with codebridge only.
-// Usage: node bench/run.ts [--with-recipes]
+// Usage: node bench/run.ts [--tasks <file>] [--cold] [--with-recipes]
+//   --cold: every bridge task starts from a fresh catalog copy (no learned shapes carried between tasks).
 import { spawn } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -57,8 +58,12 @@ const sh = (cmd: string, args: string[], env = process.env) => new Promise<numbe
   spawn(cmd, args, { stdio: "inherit", env }).on("close", (c) => res(c ?? 1)));
 
 async function main() {
-  const withRecipes = process.argv.includes("--with-recipes");
-  const { primary, recipeTraining } = JSON.parse(readFileSync(join(ROOT, "tasks.json"), "utf8")) as { primary: Task[]; recipeTraining: Task[] };
+  const argv = process.argv;
+  const withRecipes = argv.includes("--with-recipes");
+  const cold = argv.includes("--cold");
+  const tasksFile = argv.includes("--tasks") ? argv[argv.indexOf("--tasks") + 1] : join(ROOT, "tasks.json");
+  const { primary, recipeTraining } = JSON.parse(readFileSync(tasksFile, "utf8")) as { primary: Task[]; recipeTraining: Task[] };
+  console.log(`tasks: ${tasksFile} (${primary.length}), mode: ${cold ? "cold (fresh catalog per task)" : "warm (shapes accumulate within the run)"}`);
   const { loadServers } = await import("../src/config.ts");
   const { Catalog } = await import("../src/catalog/catalog.ts");
   const { openDb } = await import("../src/catalog/db.ts");
@@ -70,10 +75,16 @@ async function main() {
     // Isolated copy of the bridge's data dir (tokens included, 0600), refreshed, with no recipes.
     if ((await sh(BIN, ["refresh"])) !== 0) throw new Error("codebridge refresh failed");
     const data = join(OUT, "data");
-    cpSync(CB, join(data, "codebridge"), { recursive: true });
-    rmSync(join(data, "codebridge/recipes"), { recursive: true, force: true });
+    const seed = join(OUT, "seed");
+    // Every run starts with no recipes and no learned shapes, whatever the live catalog has picked up.
+    cpSync(CB, join(seed, "codebridge"), { recursive: true });
+    rmSync(join(seed, "codebridge/recipes"), { recursive: true, force: true });
+    const seedDb = openDb(join(seed, "codebridge/catalog.db"));
+    seedDb.exec("DELETE FROM recipes; DELETE FROM recipes_fts; UPDATE tools SET learned = NULL; PRAGMA wal_checkpoint(TRUNCATE);");
+    seedDb.close();
+    const resetData = () => { rmSync(data, { recursive: true, force: true }); cpSync(seed, data, { recursive: true }); };
+    resetData();
     const catalog = new Catalog(openDb(join(data, "codebridge/catalog.db")));
-    catalog.db.exec("DELETE FROM recipes; DELETE FROM recipes_fts;");
 
     const writeCfg = (name: string, cfg: object) => {
       const f = join(OUT, name);
@@ -93,6 +104,7 @@ async function main() {
       const rows: any[] = [];
       for (const t of tasks) {
         for (const mode of modes) {
+          if (cold && mode === "bridge" && label !== "training") resetData();
           const { file, allowed } = mode === "direct" ? directFor(t) : { file: bridgeCfg, allowed: bridgeAllowed };
           const { events, ms } = await claude(t.prompt, file, allowed);
           const s = summarize(events);
@@ -125,7 +137,7 @@ async function main() {
       recipeRows = await runSet(primary, "with-recipes", ["bridge"]);
       report([...primaryRows.filter((r) => r.mode === "direct"), ...recipeRows], "With recipes (reported separately)");
     }
-    writeFileSync(join(ROOT, `results-${new Date().toISOString().slice(0, 19).replace(/:/g, "")}.json`), JSON.stringify({ primary: primaryRows, withRecipes: recipeRows }, null, 1));
+    writeFileSync(join(ROOT, `results-${cold ? "cold-" : ""}${new Date().toISOString().slice(0, 19).replace(/:/g, "")}.json`), JSON.stringify({ primary: primaryRows, withRecipes: recipeRows }, null, 1));
   } finally {
     rmSync(OUT, { recursive: true, force: true }); // copied tokens and configs
   }
