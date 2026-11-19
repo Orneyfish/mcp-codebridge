@@ -16,7 +16,7 @@ function build() {
   const s = new McpServer({ name: "fixture", version: "1.0.0" });
   s.registerTool("get_item", { description: "Get one item by id. Returns its name.", inputSchema: { id: z.string().describe("Item id") }, annotations: { readOnlyHint: true } },
     async ({ id }) => { log("get_item"); return text(JSON.stringify({ id, name: "item " + id, empty: null, tags: [], auth: lastAuth })); });
-  s.registerTool("list_items", { description: "List all items.", inputSchema: {}, outputSchema: { items: z.array(z.object({ id: z.string(), blob: z.string() })) } },
+  s.registerTool("list_items", { description: "List all items.", inputSchema: {}, outputSchema: { items: z.array(z.object({ id: z.string(), blob: z.string() })) }, annotations: { readOnlyHint: true } },
     async () => { log("list_items"); const sc = { items: [1, 2, 3, 4, 5].map((i) => ({ id: String(i), blob: "x".repeat(3000) })) }; return { ...text(JSON.stringify(sc)), structuredContent: sc }; });
   s.registerTool("delete_item", { description: "Delete an item.", inputSchema: { id: z.string() }, annotations: { destructiveHint: true } },
     async ({ id }) => { log("delete_item"); return text("deleted " + id); });

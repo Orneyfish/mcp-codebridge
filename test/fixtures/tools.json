@@ -59,6 +59,9 @@
    "$schema": "http://json-schema.org/draft-07/schema#",
    "additionalProperties": false
   },
+  "annotations": {
+   "readOnlyHint": true
+  },
   "execution": {
    "taskSupport": "forbidden"
   }

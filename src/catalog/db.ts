@@ -11,7 +11,7 @@ export function openDb(file = paths().catalogDb): DatabaseSync {
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS servers(name TEXT PRIMARY KEY, ns TEXT, status TEXT, reason TEXT, updated INTEGER);
     CREATE TABLE IF NOT EXISTS tools(id INTEGER PRIMARY KEY, server TEXT NOT NULL, name TEXT NOT NULL, ident TEXT NOT NULL, ns TEXT NOT NULL,
-      summary TEXT, description TEXT, decl TEXT, check_decl TEXT, access TEXT, hash TEXT, usage REAL DEFAULT 0, UNIQUE(server, name));
+      summary TEXT, description TEXT, decl TEXT, check_decl TEXT, access TEXT, access_src TEXT, hash TEXT, usage REAL DEFAULT 0, UNIQUE(server, name));
     CREATE VIRTUAL TABLE IF NOT EXISTS tools_fts USING fts5(ident, summary, description);
     CREATE TABLE IF NOT EXISTS recipes(id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, description TEXT, status TEXT, reason TEXT, usage REAL DEFAULT 0);
     CREATE VIRTUAL TABLE IF NOT EXISTS recipes_fts USING fts5(name, description);

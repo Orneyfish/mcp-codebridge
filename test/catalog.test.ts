@@ -42,6 +42,23 @@ test("override changes access", () => {
   assert.equal(c.resolve("fx", "make_thing")!.access, "read");
 });
 
+test("model verdicts: unclassified, setModelAccess, kept while hash unchanged", () => {
+  const c = fresh();
+  const un = c.unclassified().map((t) => t.name).sort();
+  assert.deepEqual(un, ["crash", "echo_env", "fail_tool", "image_tool", "make_thing", "slow"]);
+  assert.equal(c.resolve("fx", "slow")!.access, "write");
+  assert.ok(c.unclassified()[0].decl.includes("Promise<"));
+  c.setModelAccess("fx", "slow", "read");
+  assert.equal(c.resolve("fx", "slow")!.access, "read");
+  c.syncServer("fx", "fx", TOOLS);
+  assert.equal(c.resolve("fx", "slow")!.access, "read");
+  assert.ok(!c.unclassified().some((t) => t.name === "slow"));
+  c.syncServer("fx", "fx", TOOLS.map((t: any) => t.name === "slow" ? { ...t, description: "Sleep longer." } : t));
+  assert.equal(c.resolve("fx", "slow")!.access, "write");
+  c.syncServer("fx", "fx", TOOLS, { slow: { access: "read" } });
+  assert.ok(!c.unclassified().some((t) => t.name === "slow"));
+});
+
 test("tool ident collision keeps first, reports second", () => {
   tmpHome();
   const c = new Catalog();

@@ -31,7 +31,7 @@ export class Catalog {
     const changed: string[] = [], errors: string[] = [];
     this.tx(() => {
       const existing = new Map<string, any>();
-      for (const r of this.db.prepare("SELECT id, name, ident, hash FROM tools WHERE server = ?").all(server)) existing.set(r.name as string, r);
+      for (const r of this.db.prepare("SELECT id, name, ident, hash, access_src FROM tools WHERE server = ?").all(server)) existing.set(r.name as string, r);
       const seen = new Set<string>();
       const identOwner = new Map<string, string>();
       for (const r of existing.values()) if (tools.some((t) => t.name === r.name)) identOwner.set(r.ident, r.name);
@@ -42,17 +42,20 @@ export class Catalog {
         if (owner && owner !== t.name) { errors.push(`${server}: tool "${t.name}" maps to "${ident}", already used by "${owner}"; skipped`); continue; }
         identOwner.set(ident, t.name);
         seen.add(t.name);
-        const access = classify(t, overrides[t.name]?.access);
+        const decided = classify(t, overrides[t.name]?.access);
+        const src = overrides[t.name] ? "override" : decided ? "annotation" : "default";
         const hash = createHash("sha256").update(JSON.stringify([t.name, t.description, t.inputSchema, t.outputSchema, t.annotations])).digest("hex");
         if (row && row.hash === hash) {
-          this.db.prepare("UPDATE tools SET access = ?, ns = ? WHERE id = ?").run(access, ns, row.id);
+          if (decided || row.access_src !== "model") this.db.prepare("UPDATE tools SET access = ?, access_src = ?, ns = ? WHERE id = ?").run(decided ?? "write", src, ns, row.id);
+          else this.db.prepare("UPDATE tools SET ns = ? WHERE id = ?").run(ns, row.id);
           continue;
         }
+        const access = decided ?? "write";
         changed.push(t.name);
-        const vals = [ident, ns, summaryOf(t.description), t.description ?? "", toolDecl(ident, t), toolDecl(ident, t, "any"), access, hash];
+        const vals = [ident, ns, summaryOf(t.description), t.description ?? "", toolDecl(ident, t), toolDecl(ident, t, "any"), access, src, hash];
         let id = row?.id;
-        if (row) this.db.prepare("UPDATE tools SET ident=?, ns=?, summary=?, description=?, decl=?, check_decl=?, access=?, hash=? WHERE id=?").run(...vals, id);
-        else id = this.db.prepare("INSERT INTO tools(ident, ns, summary, description, decl, check_decl, access, hash, server, name) VALUES (?,?,?,?,?,?,?,?,?,?)").run(...vals, server, t.name).lastInsertRowid;
+        if (row) this.db.prepare("UPDATE tools SET ident=?, ns=?, summary=?, description=?, decl=?, check_decl=?, access=?, access_src=?, hash=? WHERE id=?").run(...vals, id);
+        else id = this.db.prepare("INSERT INTO tools(ident, ns, summary, description, decl, check_decl, access, access_src, hash, server, name) VALUES (?,?,?,?,?,?,?,?,?,?,?)").run(...vals, server, t.name).lastInsertRowid;
         this.db.prepare("DELETE FROM tools_fts WHERE rowid = ?").run(id);
         this.db.prepare("INSERT INTO tools_fts(rowid, ident, summary, description) VALUES (?,?,?,?)").run(id, `${ns}.${ident}`, summaryOf(t.description), t.description ?? "");
       }
@@ -64,6 +67,15 @@ export class Catalog {
       this.db.prepare("INSERT INTO servers(name, ns, status, updated) VALUES (?,?,'up',?) ON CONFLICT(name) DO UPDATE SET ns = excluded.ns").run(server, ns, Date.now());
     });
     return { changed, errors };
+  }
+
+  // Tools with no override, annotation or model verdict (currently treated as write).
+  unclassified(): { server: string; name: string; decl: string }[] {
+    return this.db.prepare("SELECT server, name, decl FROM tools WHERE access_src = 'default' ORDER BY server, name").all() as any;
+  }
+
+  setModelAccess(server: string, name: string, access: "read" | "write"): void {
+    this.db.prepare("UPDATE tools SET access = ?, access_src = 'model' WHERE server = ? AND name = ? AND access_src IN ('default', 'model')").run(access, server, name);
   }
 
   checkNamespace(server: string, ns: string): string | null {
