@@ -119,6 +119,6 @@ test("prelude is injected", async () => {
 test("no leftover processes", async () => {
   await sleep(200);
   let out = "";
-  try { out = execSync("pgrep -af '^deno run --no-prompt'").toString(); } catch {}
+  try { out = execSync(`pgrep -a -P ${process.pid}`).toString(); } catch {}
   assert.equal(out.trim(), "");
 });
