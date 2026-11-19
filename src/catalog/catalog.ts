@@ -78,6 +78,27 @@ export class Catalog {
     this.db.prepare("UPDATE tools SET access = ?, access_src = 'model' WHERE server = ? AND name = ? AND access_src IN ('default', 'model')").run(access, server, name);
   }
 
+  removeServer(server: string): void {
+    this.tx(() => {
+      this.db.prepare("DELETE FROM tools_fts WHERE rowid IN (SELECT id FROM tools WHERE server = ?)").run(server);
+      this.db.prepare("DELETE FROM tools WHERE server = ?").run(server);
+      this.db.prepare("DELETE FROM servers WHERE name = ?").run(server);
+    });
+  }
+
+  // Search-format lines for used tools and recipes, most used first.
+  topByUsage(n: number): string[] {
+    return this.db.prepare(`
+      SELECT line FROM (
+        SELECT ns || '.' || ident || ' — ' || summary || ' [' || access || ']' AS line, usage FROM tools WHERE usage > 0
+        UNION ALL SELECT 'recipes.' || name || ' — ' || description || ' [recipe]', usage FROM recipes WHERE status = 'ok' AND usage > 0
+      ) ORDER BY usage DESC LIMIT ?`).all(n).map((r) => r.line as string);
+  }
+
+  pruneCalls(maxAgeMs: number): number {
+    return Number(this.db.prepare("DELETE FROM calls WHERE ts < ?").run(Date.now() - maxAgeMs).changes);
+  }
+
   checkNamespace(server: string, ns: string): string | null {
     const r = this.db.prepare("SELECT name FROM servers WHERE ns = ? AND name != ?").get(ns, server);
     return r ? `namespace "${ns}" is used by both "${r.name}" and "${server}"; set "alias" on one of them in servers.json` : null;

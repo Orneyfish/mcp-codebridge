@@ -1,0 +1,6 @@
+[Unit]
+Description=codebridge refresh (tool catalog, recipes, ranking, trim rules)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/codebridge refresh
