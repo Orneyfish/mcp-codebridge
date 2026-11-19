@@ -1,0 +1,40 @@
+up: codegraph, vercel, cloudflare, mempalace
+stale: -
+unsupported: claude.ai Gmail, claude.ai Google Drive, claude.ai Google Calendar, claude.ai Google Docs, claude.ai Google Sheets, claude.ai Google Slides, claude.ai Claude Docs
+failed: -
+changed tools: 0, model-classified: 0, new rule proposals: 0
+broken recipes: -
+primary cg-power-plans direct: ok=true tokens=43475 tools=2 10304ms
+primary cg-power-plans bridge: ok=true tokens=55398 tools=4 13655ms
+primary cg-callers direct: ok=true tokens=33283 tools=2 7761ms
+primary cg-callers bridge: ok=true tokens=52248 tools=4 13721ms
+primary cg-brightness direct: ok=true tokens=32743 tools=2 8875ms
+primary cg-brightness bridge: ok=true tokens=54359 tools=4 11964ms
+primary mp-kg-stats direct: ok=true tokens=26299 tools=2 7732ms
+primary mp-kg-stats bridge: ok=true tokens=35890 tools=3 9563ms
+primary vc-model-limits direct: ok=true tokens=47582 tools=3 12653ms
+primary vc-model-limits bridge: ok=true tokens=37392 tools=3 12470ms
+primary vc-haiku-count direct: ok=true tokens=42966 tools=2 10911ms
+primary vc-haiku-count bridge: ok=true tokens=36133 tools=3 13020ms
+primary vc-docs-duration direct: ok=true tokens=42096 tools=2 9648ms
+primary vc-docs-duration bridge: ok=true tokens=27496 tools=2 9933ms
+
+Primary (no recipes)
+| task | mode | ok | tokens | tool calls | ms |
+|---|---|---|---|---|---|
+| cg-power-plans | direct | yes | 43475 | 2 | 10304 |
+| cg-power-plans | bridge | yes | 55398 | 4 | 13655 |
+| cg-callers | direct | yes | 33283 | 2 | 7761 |
+| cg-callers | bridge | yes | 52248 | 4 | 13721 |
+| cg-brightness | direct | yes | 32743 | 2 | 8875 |
+| cg-brightness | bridge | yes | 54359 | 4 | 11964 |
+| mp-kg-stats | direct | yes | 26299 | 2 | 7732 |
+| mp-kg-stats | bridge | yes | 35890 | 3 | 9563 |
+| vc-model-limits | direct | yes | 47582 | 3 | 12653 |
+| vc-model-limits | bridge | yes | 37392 | 3 | 12470 |
+| vc-haiku-count | direct | yes | 42966 | 2 | 10911 |
+| vc-haiku-count | bridge | yes | 36133 | 3 | 13020 |
+| vc-docs-duration | direct | yes | 42096 | 2 | 9648 |
+| vc-docs-duration | bridge | yes | 27496 | 2 | 9933 |
+direct: 268444 tokens, 7 ok, 15 calls | bridge: 298916 tokens, 7 ok, 23 calls
+saving: -11.4% → FAIL (bar: ≥30% fewer tokens, equal success)
