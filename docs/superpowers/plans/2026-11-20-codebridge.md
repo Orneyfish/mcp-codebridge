@@ -524,3 +524,27 @@ This replaces the name heuristic in design §5.5. The new classification order i
 - Trimming keeps empty arrays (design §5.6 said to drop all empty fields). With them dropped, a search that found nothing turned `items: []` into `undefined`, and scripts that called `.map` on it crashed.
 - Earlier fix found by the benchmark: the five tools carry `_meta["anthropic/alwaysLoad"] = true`, so Claude Code doesn't defer them behind tool search (design G2).
 - Learned result shapes (approved after run 3): every successful read call stores a compact type inferred from the trimmed result (`shapeOf`: keys and value types only; data-like keys collapse to `Record<string, unknown>`; ≤ 800 chars). It is stored only for tools without an `outputSchema`. A shorter shape never replaces a longer one, and the shape resets when the tool's hash changes. `describe` and `search` show it as the return type, and `checkDeclarations` keeps `any`. `openDb` adds the column to existing catalogs.
+
+## Benchmark findings (2026-11-20, runs 5–8)
+
+Pass bar (design §5.9): ≥ 30 % fewer total tokens with equal task success. **Current status: not met on the held-out set once the measurement bias below is removed.**
+
+| run | set | reported saving | notes |
+|---|---|---|---|
+| 5 | held-out (9) | 32.8 % | first task inflated (greenfield, below) → ≈ 31 % |
+| 6 | tuned (10) | 22.2 % no recipes / 30.4 % with recipes | inflated → ≈ 20 % / ≈ 29 % |
+| 7a, 7b | held-out | 30.8 %, 37.0 % | inflated → ≈ 29 %, ≈ 36 % |
+| 8a, 8b | held-out, bias fixed | 17.3 %, 21.5 % | direct h-cf-whoami failed (Claude Code's own cloudflare connection unauthenticated); excluding it 23.4 %, 27.5 % |
+
+Findings:
+- **One task carries the saving.** Without h-vc-gpt-1m (direct wanders through 6–9 calls, 140–187 k tokens) the held-out saving is 7–10 % in runs 5/7 and ≈ 0 % in run 8. codebridge wins clearly on large catalogs (vercel: 24–33 % per task) and loses 1–8 k tokens per task on small servers (codegraph, cloudflare, mempalace).
+- **Variance is low at equal call counts** (< 4 % per task across runs); the swings are an extra tool call.
+- **Extra calls on first use of a tool:** with a fresh catalog every return type is `Promise<unknown>`; Vercel wraps data as `{ result: {...} }`, the model guesses `r.domains`, and sometimes crashes and probes (h-vc-domains 3 calls in 1 of 2 reruns). Learned shapes remove this after the first successful call, so the bench measures each tool's worst case.
+- **Measurement bias (fixed in 1aa6072):** an empty bench cwd made the Vercel plugin's SessionStart hook inject ≈ 10.5 k tokens of "greenfield" context into the first session of each run (always task 1, direct), inflating direct totals. The bench now seeds the work dir.
+- **Lapsed logins invalidated a run (fixed in 11f7319, 1aa6072):** the Vercel login only requested `openid` and got a 1 h token with no refresh token. Login now adds `offline_access` when the auth server supports it; the bridge marks unreachable servers `stale`, and the bench refuses to start or stops mid-run when a needed server is not up.
+- **Recipes:** training saved find_symbol_lines, find_symbol_usages, gateway_model_info; with recipes the tuned set gained ≈ 8 points but one task (cg-brightness) got worse.
+
+Open:
+- Re-authenticate Claude Code's cloudflare connection and rerun the held-out set for clean numbers (`--keep-transcripts`).
+- Decide scope: front only large-catalog servers (e.g. vercel) through codebridge and keep small servers direct.
+- Not yet observed: an automatic token refresh after the 1 h expiry.
