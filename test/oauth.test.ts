@@ -25,6 +25,21 @@ test("non-interactive redirect throws NeedsLogin", async () => {
   assert.throws(() => p.redirectToAuthorization(new URL("https://auth/x")), (e: Error) => e instanceof NeedsLogin && /codebridge login s/.test(e.message));
 });
 
+test("adds offline_access (and prompt=consent) only when the auth server supports it", () => {
+  tmpHome();
+  const seen: URL[] = [];
+  const p = new FileOAuthProvider("s", { interactive: true, onRedirect: (u) => seen.push(u) });
+  p.saveDiscoveryState({ authorizationServerMetadata: { scopes_supported: ["openid", "offline_access"] } });
+  p.redirectToAuthorization(new URL("https://auth/x?scope=openid"));
+  assert.equal(seen[0].searchParams.get("scope"), "openid offline_access");
+  assert.equal(seen[0].searchParams.get("prompt"), "consent");
+  const q = new FileOAuthProvider("s", { interactive: true, onRedirect: (u) => seen.push(u) });
+  q.saveDiscoveryState({ authorizationServerMetadata: { scopes_supported: ["openid"] } });
+  q.redirectToAuthorization(new URL("https://auth/x?scope=openid"));
+  assert.equal(seen[1].searchParams.get("scope"), "openid");
+  assert.equal(seen[1].searchParams.has("prompt"), false);
+});
+
 test("DCR refused → unsupported, tokens never logged", async () => {
   tmpHome();
   await new FileOAuthProvider("g", { interactive: false }).saveTokens({ access_token: "SECRET-TOKEN-VALUE", token_type: "bearer" });

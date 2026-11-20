@@ -39,8 +39,18 @@ export class FileOAuthProvider implements OAuthClientProvider {
     if (!v) throw new Error(`${this.server}: no PKCE verifier saved`);
     return v;
   }
+  private asScopes: string[] = [];
+  saveDiscoveryState(state: { authorizationServerMetadata?: { scopes_supported?: string[] } }) {
+    this.asScopes = state.authorizationServerMetadata?.scopes_supported ?? [];
+  }
   redirectToAuthorization(url: URL) {
     if (!this.opts.interactive || !this.opts.onRedirect) throw new NeedsLogin(`${this.server}: run "codebridge login ${this.server}"`);
+    // The SDK requests the resource's scopes (Vercel: just "openid"), which yields a 1 h token with no refresh token.
+    const scope = url.searchParams.get("scope") ?? "";
+    if (this.asScopes.includes("offline_access") && !scope.split(" ").includes("offline_access")) {
+      url.searchParams.set("scope", [scope, "offline_access"].filter(Boolean).join(" "));
+      if (!url.searchParams.has("prompt")) url.searchParams.set("prompt", "consent");
+    }
     this.opts.onRedirect(url);
   }
   invalidateCredentials(scope: "all" | "client" | "tokens" | "verifier" | "discovery") {

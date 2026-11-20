@@ -52,6 +52,8 @@ function claude(prompt: string, mcpConfig: string, allowed: string[]): Promise<{
     "--tools", "ToolSearch", "--allowedTools", allowed.join(","), "--no-session-persistence"];
   const work = join(OUT, "work");
   mkdirSync(work, { recursive: true });
+  // An empty cwd makes the Vercel plugin's SessionStart hook inject ~10k tokens of "greenfield" context into only the first session.
+  writeFileSync(join(work, "mempalace.yaml"), "", { flag: "a" });
   return new Promise((resolve) => {
     const p = spawn("claude", args, { cwd: work, stdio: ["ignore", "pipe", "ignore"] });
     let buf = "";
