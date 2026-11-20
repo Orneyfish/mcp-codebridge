@@ -1,6 +1,7 @@
 // Token benchmark (design §5.9): each task runs via `claude -p` with the direct servers only, then with codebridge only.
-// Usage: node bench/run.ts [--tasks <file>] [--cold] [--with-recipes]
+// Usage: node bench/run.ts [--tasks <file>] [--cold] [--with-recipes] [--keep-transcripts]
 //   --cold: every bridge task starts from a fresh catalog copy (no learned shapes carried between tasks).
+//   --keep-transcripts: save each task's stream-json to bench/transcripts/<run>/ (gitignored: holds raw tool results).
 import { spawn } from "node:child_process";
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -71,6 +72,9 @@ async function main() {
   const argv = process.argv;
   const withRecipes = argv.includes("--with-recipes");
   const cold = argv.includes("--cold");
+  const stamp = new Date().toISOString().slice(0, 19).replace(/:/g, "");
+  const transcripts = argv.includes("--keep-transcripts") ? join(ROOT, "transcripts", `${cold ? "cold-" : ""}${stamp}`) : null;
+  if (transcripts) mkdirSync(transcripts, { recursive: true, mode: 0o700 });
   const tasksFile = argv.includes("--tasks") ? argv[argv.indexOf("--tasks") + 1] : join(ROOT, "tasks.json");
   const { primary, recipeTraining } = JSON.parse(readFileSync(tasksFile, "utf8")) as { primary: Task[]; recipeTraining: Task[] };
   console.log(`tasks: ${tasksFile} (${primary.length}), mode: ${cold ? "cold (fresh catalog per task)" : "warm (shapes accumulate within the run)"}`);
@@ -122,6 +126,7 @@ async function main() {
           const { file, allowed } = mode === "direct" ? directFor(t) : { file: bridgeCfg, allowed: bridgeAllowed };
           const { events, ms } = await claude(t.prompt, file, allowed);
           const s = summarize(events);
+          if (transcripts) writeFileSync(join(transcripts, `${label}-${t.id}-${mode}.jsonl`), events.map((e) => JSON.stringify(e)).join("\n") + "\n", { mode: 0o600 });
           rows.push({ set: label, task: t.id, mode, ok: judge(s, t.expect), tokens: s.tokens, input: s.input, output: s.output, toolCalls: s.toolCalls, ms, paused: s.paused, answer: s.answer.slice(0, 300) });
           console.log(`${label} ${t.id} ${mode}: ok=${rows.at(-1).ok} tokens=${s.tokens} tools=${s.toolCalls} ${ms}ms`);
           // Mid-run check: a server lost partway makes later bridge tasks fail cheaply, so stop instead of reporting a fake saving.
@@ -154,7 +159,7 @@ async function main() {
       recipeRows = await runSet(primary, "with-recipes", ["bridge"]);
       report([...primaryRows.filter((r) => r.mode === "direct"), ...recipeRows], "With recipes (reported separately)");
     }
-    writeFileSync(join(ROOT, `results-${cold ? "cold-" : ""}${new Date().toISOString().slice(0, 19).replace(/:/g, "")}.json`), JSON.stringify({ primary: primaryRows, withRecipes: recipeRows }, null, 1));
+    writeFileSync(join(ROOT, `results-${cold ? "cold-" : ""}${stamp}.json`), JSON.stringify({ primary: primaryRows, withRecipes: recipeRows }, null, 1));
   } finally {
     rmSync(OUT, { recursive: true, force: true }); // copied tokens and configs
   }
