@@ -55,6 +55,22 @@ test("timeoutMs", async () => {
   await u.close();
 });
 
+test("onDown: crash, timeout, missing command report; tool errors and server-side JSON-RPC errors don't", async () => {
+  const down: string[] = [];
+  const u = new Upstreams({ fx: { ...fx, timeoutMs: 200 }, bad: { command: "/nonexistent" } }, undefined, (s) => down.push(s));
+  const r = await u.callTool("fx", "fail_tool", {});
+  assert.equal(r.isError, true);
+  await u.callTool("fx", "no_such_tool", {}).catch(() => {}); // server answers: unknown tool
+  await u.callTool("fx", "get_item", {}).catch(() => {}); // server answers: invalid params
+  assert.deepEqual(down, []);
+  await assert.rejects(u.callTool("fx", "slow", { ms: 1000 }));
+  assert.deepEqual(down, ["fx"]);
+  await assert.rejects(u.callTool("fx", "crash", {}));
+  await assert.rejects(u.listTools("bad"));
+  assert.deepEqual(down, ["fx", "fx", "bad"]);
+  await u.close();
+});
+
 for (const [mode, type] of [["--http", "http"], ["--sse", "sse"]] as const) {
   test(`${type} transport with headers`, async () => {
     const port = await serveFixture(mode);

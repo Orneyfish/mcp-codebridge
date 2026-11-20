@@ -1,6 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { summarize, judge } from "../bench/run.ts";
+import { summarize, judge, notUp } from "../bench/run.ts";
+
+test("notUp lists needed servers that are not up, ignores unneeded ones", () => {
+  const servers = [
+    { name: "a", status: "up", reason: null },
+    { name: "v", status: "stale", reason: 'run "codebridge login v"' },
+    { name: "x", status: "failed", reason: null },
+  ];
+  assert.deepEqual(notUp([{ servers: ["a", "v"] }, { servers: ["a", "m"] }], servers), ['v: stale (run "codebridge login v")', "m: not in catalog"]);
+  assert.deepEqual(notUp([{ servers: ["a"] }], servers), []);
+});
 
 const events = [
   { type: "system", subtype: "init" },
@@ -14,6 +24,7 @@ const events = [
 test("summarize sums usage, counts tool calls, detects pauses", () => {
   assert.deepEqual(summarize(events), { tokens: 1115, input: 1110, output: 5, toolCalls: 2, paused: true, answer: "Profiles: Quiet, Balanced" });
 });
+
 
 test("summarize with no result event", () => {
   assert.equal(summarize([{ type: "system" }]).answer, "");

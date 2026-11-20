@@ -12,14 +12,15 @@ import { Upstreams } from "./upstream/manager.ts";
 import { FileOAuthProvider, login } from "./upstream/oauth.ts";
 import { importServers, status, verify } from "./commands.ts";
 
-export function makeUpstreams(servers: Record<string, ServerEntry>): Upstreams {
+export function makeUpstreams(servers: Record<string, ServerEntry>, onDown?: (server: string, reason: string) => void): Upstreams {
   const enabled = Object.fromEntries(Object.entries(servers).filter(([, e]) => !e.disabled));
-  return new Upstreams(enabled, (name, e) => new FileOAuthProvider(name, { interactive: false, clientId: e.oauth?.clientId }));
+  return new Upstreams(enabled, (name, e) => new FileOAuthProvider(name, { interactive: false, clientId: e.oauth?.clientId }), onDown);
 }
 
 async function serve() {
   const catalog = new Catalog();
-  const upstreams = makeUpstreams(loadServers());
+  // A server lost mid-session shows as stale in `status` (and to the bench) until the next refresh.
+  const upstreams = makeUpstreams(loadServers(), (s, reason) => catalog.markServer(s, "stale", reason));
   const stash = new Stash();
   const runs = new Runs({ executor: new DenoExecutor(), catalog, upstreams, stash, recipePrelude: (code) => recipePrelude(code, catalog) });
   const server = createServer({ runs, catalog, saveRecipe: (n, c, d) => saveRecipe(n, c, d, catalog) });

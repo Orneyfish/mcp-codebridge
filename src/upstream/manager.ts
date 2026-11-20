@@ -3,21 +3,27 @@ import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotoc
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import type { OAuthClientProvider } from "@modelcontextprotocol/sdk/client/auth.js";
-import type { CallToolResult, Tool } from "@modelcontextprotocol/sdk/types.js";
+import { ErrorCode, McpError, type CallToolResult, type Tool } from "@modelcontextprotocol/sdk/types.js";
 import { resolveVars, type ServerEntry } from "../config.ts";
 
 export type AuthProviderFactory = (server: string, entry: ServerEntry) => OAuthClientProvider | undefined;
 
+/** True when the server itself answered with a JSON-RPC error; anything else (login, timeout, transport, crash, HTTP) means unreachable. */
+export const serverAnswered = (err: unknown) =>
+  err instanceof McpError && err.code !== ErrorCode.ConnectionClosed && err.code !== ErrorCode.RequestTimeout;
+
 export class Upstreams {
   private servers: Record<string, ServerEntry>;
   private authProvider?: AuthProviderFactory;
+  private onDown?: (server: string, reason: string) => void;
   private conns = new Map<string, Promise<Client>>();
   private crashes = new Map<string, number>();
   private closing = false;
 
-  constructor(servers: Record<string, ServerEntry>, authProvider?: AuthProviderFactory) {
+  constructor(servers: Record<string, ServerEntry>, authProvider?: AuthProviderFactory, onDown?: (server: string, reason: string) => void) {
     this.servers = servers;
     this.authProvider = authProvider;
+    this.onDown = onDown;
   }
 
   state(server: string): "idle" | "up" | "failed" {
@@ -67,6 +73,7 @@ export class Upstreams {
       return await f(await this.client(server));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      if (!serverAnswered(err)) this.onDown?.(server, msg);
       throw new Error(msg.startsWith(`${server}: `) ? msg : `${server}: ${msg}`, { cause: err });
     }
   }

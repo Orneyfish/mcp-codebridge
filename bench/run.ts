@@ -30,6 +30,16 @@ export function judge(s: Pick<Summary, "answer" | "paused">, expect: string[]): 
   return !s.paused && expect.every((x) => a.includes(x.toLowerCase()));
 }
 
+// Servers the tasks need that the bridge can't reach; a stale login otherwise shows up as cheap failed bridge tasks.
+export function notUp(tasks: Pick<Task, "servers">[], servers: { name: string; status: string; reason: string | null }[]): string[] {
+  const need = new Set(tasks.flatMap((t) => t.servers));
+  const byName = new Map(servers.map((s) => [s.name, s]));
+  return [...need].flatMap((n) => {
+    const s = byName.get(n);
+    return s?.status === "up" ? [] : [`${n}: ${s ? `${s.status}${s.reason ? ` (${s.reason})` : ""}` : "not in catalog"}`];
+  });
+}
+
 const ROOT = dirname(new URL(import.meta.url).pathname);
 const OUT = join(ROOT, "out");
 const BIN = join(homedir(), ".local/bin/codebridge");
@@ -85,6 +95,10 @@ async function main() {
     const resetData = () => { rmSync(data, { recursive: true, force: true }); cpSync(seed, data, { recursive: true }); };
     resetData();
     const catalog = new Catalog(openDb(join(data, "codebridge/catalog.db")));
+    // Fresh connection each time: --cold swaps the catalog file, and the bridge marks servers stale in it mid-run.
+    const bridgeServers = () => { const db = openDb(join(data, "codebridge/catalog.db")); try { return new Catalog(db).servers(); } finally { db.close(); } };
+    const down = notUp([...primary, ...(withRecipes ? recipeTraining : [])], bridgeServers());
+    if (down.length) throw new Error(`bridge servers not up, fix before benchmarking: ${down.join("; ")}`);
 
     const writeCfg = (name: string, cfg: object) => {
       const f = join(OUT, name);
@@ -110,6 +124,9 @@ async function main() {
           const s = summarize(events);
           rows.push({ set: label, task: t.id, mode, ok: judge(s, t.expect), tokens: s.tokens, input: s.input, output: s.output, toolCalls: s.toolCalls, ms, paused: s.paused, answer: s.answer.slice(0, 300) });
           console.log(`${label} ${t.id} ${mode}: ok=${rows.at(-1).ok} tokens=${s.tokens} tools=${s.toolCalls} ${ms}ms`);
+          // Mid-run check: a server lost partway makes later bridge tasks fail cheaply, so stop instead of reporting a fake saving.
+          const down = mode === "bridge" ? notUp([t], bridgeServers()) : [];
+          if (down.length) throw new Error(`bridge server unreachable mid-run at ${label} ${t.id}: ${down.join("; ")}; no results written`);
         }
       }
       return rows;
