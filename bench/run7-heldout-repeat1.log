@@ -1,0 +1,49 @@
+tasks: bench/heldout.json (9), mode: warm (shapes accumulate within the run)
+up: codegraph, vercel, cloudflare, mempalace
+stale: -
+unsupported: claude.ai Gmail, claude.ai Google Drive, claude.ai Google Calendar, claude.ai Google Docs, claude.ai Google Sheets, claude.ai Google Slides, claude.ai Claude Docs
+failed: -
+changed tools: 0, model-classified: 0, new rule proposals: 0
+broken recipes: -
+primary h-cg-hwmon direct: ok=true tokens=43137 tools=2 11492ms
+primary h-cg-hwmon bridge: ok=true tokens=34208 tools=2 10130ms
+primary h-cg-gpu-modes direct: ok=true tokens=33496 tools=2 12303ms
+primary h-cg-gpu-modes bridge: ok=true tokens=34773 tools=2 10131ms
+primary h-cg-appid direct: ok=true tokens=34880 tools=2 10087ms
+primary h-cg-appid bridge: ok=true tokens=38617 tools=3 11396ms
+primary h-vc-domains direct: ok=true tokens=42015 tools=2 12696ms
+primary h-vc-domains bridge: ok=true tokens=38743 tools=3 12638ms
+primary h-vc-repo direct: ok=true tokens=43640 tools=2 12581ms
+primary h-vc-repo bridge: ok=true tokens=39165 tools=3 14505ms
+primary h-vc-nextjs direct: ok=true tokens=44170 tools=2 11603ms
+primary h-vc-nextjs bridge: ok=true tokens=29172 tools=2 11176ms
+primary h-vc-gpt-1m direct: ok=true tokens=142205 tools=6 23606ms
+primary h-vc-gpt-1m bridge: ok=true tokens=29642 tools=2 13916ms
+primary h-cf-whoami direct: ok=true tokens=24294 tools=2 8635ms
+primary h-cf-whoami bridge: ok=true tokens=28666 tools=2 8779ms
+primary h-mp-wings direct: ok=true tokens=26960 tools=2 9502ms
+primary h-mp-wings bridge: ok=true tokens=28037 tools=2 9306ms
+
+Primary (no recipes)
+| task | mode | ok | tokens | tool calls | ms |
+|---|---|---|---|---|---|
+| h-cg-hwmon | direct | yes | 43137 | 2 | 11492 |
+| h-cg-hwmon | bridge | yes | 34208 | 2 | 10130 |
+| h-cg-gpu-modes | direct | yes | 33496 | 2 | 12303 |
+| h-cg-gpu-modes | bridge | yes | 34773 | 2 | 10131 |
+| h-cg-appid | direct | yes | 34880 | 2 | 10087 |
+| h-cg-appid | bridge | yes | 38617 | 3 | 11396 |
+| h-vc-domains | direct | yes | 42015 | 2 | 12696 |
+| h-vc-domains | bridge | yes | 38743 | 3 | 12638 |
+| h-vc-repo | direct | yes | 43640 | 2 | 12581 |
+| h-vc-repo | bridge | yes | 39165 | 3 | 14505 |
+| h-vc-nextjs | direct | yes | 44170 | 2 | 11603 |
+| h-vc-nextjs | bridge | yes | 29172 | 2 | 11176 |
+| h-vc-gpt-1m | direct | yes | 142205 | 6 | 23606 |
+| h-vc-gpt-1m | bridge | yes | 29642 | 2 | 13916 |
+| h-cf-whoami | direct | yes | 24294 | 2 | 8635 |
+| h-cf-whoami | bridge | yes | 28666 | 2 | 8779 |
+| h-mp-wings | direct | yes | 26960 | 2 | 9502 |
+| h-mp-wings | bridge | yes | 28037 | 2 | 9306 |
+direct: 434797 tokens, 9 ok, 22 calls | bridge: 301023 tokens, 9 ok, 21 calls
+saving: 30.8% → PASS (bar: ≥30% fewer tokens, equal success)
